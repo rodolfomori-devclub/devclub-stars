@@ -1,13 +1,20 @@
 // src/pages/Home.jsx
+// Página principal da aplicação DevClub Stars
+
 import { useState, useEffect, useRef } from 'react';
-import { studentsData } from '../data/students';
+import { getAllStudents, getRecentlyHiredStudents } from '../services/studentService';
 import StudentCard from '../components/ui/StudentCard';
 import Button from '../components/ui/Button';
 
 const Home = () => {
+  const [students, setStudents] = useState([]);
+  const [recentlyHiredStudents, setRecentlyHiredStudents] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [studentsPerPage] = useState(30);
   const [isVisible, setIsVisible] = useState({
     hero: false,
     about: false,
@@ -20,9 +27,35 @@ const Home = () => {
   const featuredRef = useRef(null);
   const allRef = useRef(null);
 
-    // Filtrar os alunos com base no filtro atual e termo de busca
+  // Carregar todos os alunos do Firebase
   useEffect(() => {
-    let result = [...studentsData];
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // Buscar todos os alunos
+        const allStudents = await getAllStudents();
+        setStudents(allStudents);
+        
+        // Buscar alunos destaque (contratados recentemente)
+        const recentStudents = await getRecentlyHiredStudents();
+        setRecentlyHiredStudents(recentStudents);
+        
+        setLoading(false);
+      } catch (error) {
+        console.error('Erro ao carregar dados:', error);
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, []);
+
+  // Filtrar os alunos com base no filtro atual e termo de busca
+  useEffect(() => {
+    if (students.length === 0) return;
+    
+    let result = [...students];
     
     // Aplicar filtro
     if (filter === 'with-video') {
@@ -38,14 +71,18 @@ const Home = () => {
       const term = searchTerm.toLowerCase();
       result = result.filter(
         student => 
-          student.name.toLowerCase().includes(term) || 
-          student.previousProfession.toLowerCase().includes(term) ||
-          student.journeyDetails.toLowerCase().includes(term)
+          student.name?.toLowerCase().includes(term) || 
+          student.previousProfession?.toLowerCase().includes(term) ||
+          student.journeyDetails?.toLowerCase().includes(term) ||
+          student.firstJobDetails?.toLowerCase().includes(term) ||
+          student.howDevClubHelped?.toLowerCase().includes(term)
       );
     }
     
     setFilteredStudents(result);
-  }, [filter, searchTerm]);
+    // Resetar para a primeira página quando mudar o filtro ou a busca
+    setCurrentPage(1);
+  }, [filter, searchTerm, students]);
 
   // Observar elementos para animações de entrada
   useEffect(() => {
@@ -84,9 +121,6 @@ const Home = () => {
     };
   }, []);
 
-  // Obter alunos que conseguiram o primeiro emprego este mês
-  const firstJobStudents = studentsData.filter(student => student.firstJobThisMonth);
-
   return (
     <div className="pt-16">
       {/* Hero Section */}
@@ -119,21 +153,27 @@ const Home = () => {
               <div className="absolute -inset-1 bg-primary/20 rounded-lg blur-xl"></div>
               <div className="relative bg-background-light dark:bg-background-dark rounded-lg shadow-xl overflow-hidden">
                 <div className="grid grid-cols-2 gap-2 p-4">
-                  {firstJobStudents.slice(0, 4).map((student, index) => (
-                    <div key={index} className="aspect-square rounded-md overflow-hidden">
-                      {student.photoUrl ? (
-                        <img 
-                          src={student.photoUrl} 
-                          alt={student.name} 
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-secondary flex items-center justify-center text-white text-xl font-bold">
-                          {student.name.charAt(0)}
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                  {loading ? (
+                    Array(4).fill(0).map((_, index) => (
+                      <div key={index} className="aspect-square rounded-md overflow-hidden bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
+                    ))
+                  ) : (
+                    recentlyHiredStudents.slice(0, 4).map((student, index) => (
+                      <div key={index} className="aspect-square rounded-md overflow-hidden">
+                        {student.photoUrl ? (
+                          <img 
+                            src={student.photoUrl} 
+                            alt={student.name} 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-secondary flex items-center justify-center text-white text-xl font-bold">
+                            {student.name?.charAt(0) || '?'}
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  )}
                 </div>
                 <div className="bg-primary text-secondary p-4 text-center font-bold">
                   <p className="text-xl">+ de 15.000 alunos</p>
@@ -242,15 +282,47 @@ const Home = () => {
               Alunos <span className="text-primary">Destaque</span>
             </h2>
             <p className="text-xl text-text-muted-light dark:text-text-muted-dark max-w-3xl mx-auto">
-              Conheça algumas das histórias mais inspiradoras dos nossos alunos que se destacaram em suas jornadas de transformação.
+              Conheça algumas das histórias mais inspiradoras dos nossos alunos que conseguiram emprego recentemente.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {firstJobStudents.map((student) => (
-              <StudentCard key={student.id} student={student} />
-            ))}
-          </div>
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {Array(4).fill(0).map((_, index) => (
+                <div key={index} className="h-64 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
+              ))}
+            </div>
+          ) : (
+            <>
+              {recentlyHiredStudents.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {recentlyHiredStudents.map((student) => (
+                    <StudentCard key={student.id} student={student} />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-16">
+                  <svg
+                    className="mx-auto h-12 w-12 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <p className="mt-4 text-xl text-text-muted-light dark:text-text-muted-dark">
+                    Nenhum aluno destaque encontrado.
+                  </p>
+                </div>
+              )}
+            </>
+          )}
 
           <div className="text-center mt-12">
             <Button href="#historias" variant="primary" size="lg" className="dark:bg-secondary-light dark:hover:bg-secondary dark:text-white">
@@ -347,42 +419,93 @@ const Home = () => {
             </div>
           </div>
 
-          {filteredStudents.length > 0 ? (
+          {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredStudents.map((student) => (
-                <StudentCard key={student.id} student={student} />
+              {Array(6).fill(0).map((_, index) => (
+                <div key={index} className="h-64 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-16">
-              <svg
-                className="mx-auto h-12 w-12 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <p className="mt-4 text-xl text-text-muted-light dark:text-text-muted-dark">
-                Nenhum aluno encontrado com esses critérios.
-              </p>
-              <Button
-                onClick={() => {
-                  setFilter('all');
-                  setSearchTerm('');
-                }}
-                variant="outline"
-                className="mt-4"
-              >
-                Limpar Filtros
-              </Button>
-            </div>
+            <>
+              {filteredStudents.length > 0 ? (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {filteredStudents
+                      .slice((currentPage - 1) * studentsPerPage, currentPage * studentsPerPage)
+                      .map((student) => (
+                        <StudentCard key={student.id} student={student} />
+                      ))}
+                  </div>
+                  
+                  {/* Paginação */}
+                  {filteredStudents.length > studentsPerPage && (
+                    <div className="flex justify-center mt-12">
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                          disabled={currentPage === 1}
+                          className={`px-4 py-2 rounded-md ${
+                            currentPage === 1
+                              ? 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400 cursor-not-allowed'
+                              : 'bg-secondary-light hover:bg-secondary text-white cursor-pointer'
+                          }`}
+                        >
+                          &laquo; Anterior
+                        </button>
+                        
+                        <div className="flex items-center justify-center px-4 py-2 bg-primary text-secondary rounded-md">
+                          Página {currentPage} de {Math.ceil(filteredStudents.length / studentsPerPage)}
+                        </div>
+                        
+                        <button
+                          onClick={() => setCurrentPage(prev => 
+                            Math.min(prev + 1, Math.ceil(filteredStudents.length / studentsPerPage))
+                          )}
+                          disabled={currentPage === Math.ceil(filteredStudents.length / studentsPerPage)}
+                          className={`px-4 py-2 rounded-md ${
+                            currentPage === Math.ceil(filteredStudents.length / studentsPerPage)
+                              ? 'bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400 cursor-not-allowed'
+                              : 'bg-secondary-light hover:bg-secondary text-white cursor-pointer'
+                          }`}
+                        >
+                          Próxima &raquo;
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-center py-16">
+                  <svg
+                    className="mx-auto h-12 w-12 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <p className="mt-4 text-xl text-text-muted-light dark:text-text-muted-dark">
+                    Nenhum aluno encontrado com esses critérios.
+                  </p>
+                  <Button
+                    onClick={() => {
+                      setFilter('all');
+                      setSearchTerm('');
+                    }}
+                    variant="outline"
+                    className="mt-4"
+                  >
+                    Limpar Filtros
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>

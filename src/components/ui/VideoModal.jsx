@@ -1,8 +1,11 @@
 // src/components/ui/VideoModal.jsx
+// Modal para exibição de vídeos dos alunos
+
 import { useEffect, useRef } from 'react';
 
 const VideoModal = ({ isOpen, videoUrl, onClose }) => {
   const modalRef = useRef(null);
+  const overlayRef = useRef(null);
 
   useEffect(() => {
     const handleEscape = (e) => {
@@ -12,7 +15,7 @@ const VideoModal = ({ isOpen, videoUrl, onClose }) => {
     };
 
     const handleOutsideClick = (e) => {
-      if (modalRef.current && !modalRef.current.contains(e.target)) {
+      if (overlayRef.current && e.target === overlayRef.current) {
         onClose();
       }
     };
@@ -33,17 +36,13 @@ const VideoModal = ({ isOpen, videoUrl, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in overflow-auto">
+    <div 
+      ref={overlayRef}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in overflow-hidden"
+    >
       <div 
         ref={modalRef}
-        className="relative w-full max-w-4xl mx-auto my-8 bg-background-light dark:bg-background-dark rounded-lg shadow-2xl overflow-hidden animate-slide-up"
-        style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          maxHeight: '90vh'
-        }}
+        className="relative w-full max-w-4xl mx-auto bg-background-light dark:bg-background-dark rounded-lg shadow-2xl overflow-hidden animate-slide-up"
       >
         <div className="aspect-video w-full bg-black">
           <iframe

@@ -37,7 +37,7 @@ const Button = forwardRef(({
       focus:ring-primary/50
     `,
     white: `
-    bg-white text-primary dark:text-primary hover:bg-primary/10
+    bg-transparent text-primary dark:text-primary hover:bg-primary/10
     focus:ring-primary/50
   `,
   };
