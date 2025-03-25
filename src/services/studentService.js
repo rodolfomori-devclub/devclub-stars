@@ -18,17 +18,31 @@ import { db } from '../config/firebase';
 
 const studentsCollection = 'students';
 
+// Função para embaralhar arrays (Fisher-Yates shuffle)
+const shuffleArray = (array) => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
 // Busca todos os alunos
 export const getAllStudents = async () => {
   try {
     const querySnapshot = await getDocs(
       query(collection(db, studentsCollection), orderBy('name'))
     );
-    return querySnapshot.docs.map(doc => ({
+    
+    // Convertemos os documentos do Firestore para objetos JavaScript
+    const students = querySnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
       hireDate: doc.data().hireDate?.toDate() // Converte Timestamp para Date
     }));
+
+    return students;
   } catch (error) {
     console.error("Erro ao buscar alunos:", error);
     throw error;
@@ -56,6 +70,20 @@ export const getFeaturedStudents = async () => {
   }
 };
 
+// Busca alunos com foto para exibição na página inicial
+export const getStudentsWithPhotos = async (limit = 4) => {
+  try {
+    const allStudents = await getAllStudents();
+    const studentsWithPhotos = allStudents.filter(student => student.photoUrl);
+    
+    // Embaralha os alunos com fotos e retorna apenas a quantidade solicitada
+    return shuffleArray(studentsWithPhotos).slice(0, limit);
+  } catch (error) {
+    console.error("Erro ao buscar alunos com fotos:", error);
+    throw error;
+  }
+};
+
 // Busca alunos contratados no mês atual ou anterior
 export const getRecentlyHiredStudents = async () => {
   const now = new Date();
@@ -69,7 +97,7 @@ export const getRecentlyHiredStudents = async () => {
   try {
     const allStudents = await getAllStudents();
     
-    return allStudents.filter(student => {
+    const recentStudents = allStudents.filter(student => {
       if (!student.hireDate) return false;
       
       const hireMonth = student.hireDate.getMonth();
@@ -81,6 +109,9 @@ export const getRecentlyHiredStudents = async () => {
         (hireMonth === previousMonth && hireYear === previousYear)
       );
     });
+    
+    // Retorna os alunos recentes em ordem aleatória
+    return shuffleArray(recentStudents);
   } catch (error) {
     console.error("Erro ao buscar alunos recém contratados:", error);
     throw error;

@@ -5,13 +5,28 @@ import { useState, useEffect, useRef } from 'react';
 import { getAllStudents, getRecentlyHiredStudents } from '../services/studentService';
 import StudentCard from '../components/ui/StudentCard';
 import Button from '../components/ui/Button';
+import { capitalizeWords } from '../utils/stringUtils';
+
+// Função para embaralhar arrays (Fisher-Yates shuffle)
+const shuffleArray = (array) => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
 
 const Home = () => {
   const [students, setStudents] = useState([]);
   const [recentlyHiredStudents, setRecentlyHiredStudents] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
+  const [randomOrder, setRandomOrder] = useState([]);
+  const [featuredPhotos, setFeaturedPhotos] = useState([]);
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [professionFilter, setProfessionFilter] = useState('');
+  const [randomProfessions, setRandomProfessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [studentsPerPage] = useState(30);
@@ -35,11 +50,34 @@ const Home = () => {
         
         // Buscar todos os alunos
         const allStudents = await getAllStudents();
-        setStudents(allStudents);
+        
+        // Criar ordem aleatória dos alunos
+        const shuffledStudents = shuffleArray(allStudents);
+        setStudents(shuffledStudents);
+        setRandomOrder(shuffledStudents.map(student => student.id));
         
         // Buscar alunos destaque (contratados recentemente)
         const recentStudents = await getRecentlyHiredStudents();
-        setRecentlyHiredStudents(recentStudents);
+        setRecentlyHiredStudents(shuffleArray(recentStudents));
+        
+        // Buscar alunos com foto para mostrar na seção de destaque
+        const studentsWithPhotos = allStudents.filter(student => student.photoUrl);
+        const randomPhotos = shuffleArray(studentsWithPhotos).slice(0, 4);
+        setFeaturedPhotos(randomPhotos);
+        
+        // Selecionar 10 profissões aleatórias para os botões de filtro
+        const professions = allStudents
+          .filter(student => student.previousProfession && student.previousProfession.trim())
+          .map(student => student.previousProfession.trim());
+        
+        // Use um Set para obter profissões únicas
+        const uniqueProfessions = [...new Set(professions)];
+        
+        if (uniqueProfessions.length > 0) {
+          // Embaralhar e pegar as 10 primeiras (ou menos se não houver 10)
+          const randomProfs = shuffleArray(uniqueProfessions).slice(0, 10);
+          setRandomProfessions(randomProfs);
+        }
         
         setLoading(false);
       } catch (error) {
@@ -51,13 +89,13 @@ const Home = () => {
     fetchData();
   }, []);
 
-  // Filtrar os alunos com base no filtro atual e termo de busca
+  // Filtrar os alunos com base no filtro atual, termo de busca e filtro de profissão
   useEffect(() => {
     if (students.length === 0) return;
     
     let result = [...students];
     
-    // Aplicar filtro
+    // Aplicar filtro de tipo
     if (filter === 'with-video') {
       result = result.filter(student => student.videoUrl);
     } else if (filter === 'with-photo') {
@@ -66,23 +104,27 @@ const Home = () => {
       result = result.filter(student => !student.photoUrl && !student.videoUrl);
     }
     
-    // Aplicar termo de busca
+    // Aplicar termo de busca apenas no nome e antiga profissão
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       result = result.filter(
         student => 
           student.name?.toLowerCase().includes(term) || 
-          student.previousProfession?.toLowerCase().includes(term) ||
-          student.journeyDetails?.toLowerCase().includes(term) ||
-          student.firstJobDetails?.toLowerCase().includes(term) ||
-          student.howDevClubHelped?.toLowerCase().includes(term)
+          student.previousProfession?.toLowerCase().includes(term)
+      );
+    }
+    
+    // Aplicar filtro de profissão - correspondência exata
+    if (professionFilter) {
+      result = result.filter(student => 
+        student.previousProfession === professionFilter
       );
     }
     
     setFilteredStudents(result);
     // Resetar para a primeira página quando mudar o filtro ou a busca
     setCurrentPage(1);
-  }, [filter, searchTerm, students]);
+  }, [filter, searchTerm, professionFilter, students]);
 
   // Observar elementos para animações de entrada
   useEffect(() => {
@@ -158,7 +200,7 @@ const Home = () => {
                       <div key={index} className="aspect-square rounded-md overflow-hidden bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
                     ))
                   ) : (
-                    recentlyHiredStudents.slice(0, 4).map((student, index) => (
+                    featuredPhotos.map((student, index) => (
                       <div key={index} className="aspect-square rounded-md overflow-hidden">
                         {student.photoUrl ? (
                           <img 
@@ -353,7 +395,7 @@ const Home = () => {
               <div className="relative w-full md:w-96">
                 <input
                   type="text"
-                  placeholder="Buscar alunos..."
+                  placeholder="Buscar por nome ou profissão anterior..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 rounded-lg bg-background-light dark:bg-background-dark border border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary"
@@ -417,6 +459,44 @@ const Home = () => {
                 Apenas Texto
               </button>
             </div>
+            
+            {/* Filtros de profissão aleatória */}
+            {randomProfessions.length > 0 && (
+              <div className="mb-8">
+                <h3 className="text-center text-sm font-medium text-text-muted-light dark:text-text-muted-dark mb-3">
+                  Filtrar por profissão anterior
+                </h3>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {professionFilter && (
+                    <button
+                      onClick={() => setProfessionFilter('')}
+                      className="px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100 hover:bg-red-200 dark:hover:bg-red-700 transition-colors"
+                    >
+                      <span className="flex items-center">
+                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        Limpar filtro
+                      </span>
+                    </button>
+                  )}
+                  
+                  {randomProfessions.map((profession) => (
+                    <button
+                      key={profession}
+                      onClick={() => setProfessionFilter(profession)}
+                      className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                        professionFilter === profession
+                          ? 'bg-secondary-light text-white'
+                          : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      {capitalizeWords(profession)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {loading ? (
@@ -497,6 +577,7 @@ const Home = () => {
                     onClick={() => {
                       setFilter('all');
                       setSearchTerm('');
+                      setProfessionFilter('');
                     }}
                     variant="outline"
                     className="mt-4"
@@ -520,7 +601,7 @@ const Home = () => {
             Junte-se a milhares de alunos que já mudaram suas vidas através da programação com o DevClub.
           </p>
           <Button 
-            href="https://devclub.com" 
+            href="https://go.rodolfomori.com.br/suporte" 
             target="_blank" 
             size="lg" 
             className="animate-glow"

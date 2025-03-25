@@ -4,6 +4,8 @@
 import { useState } from 'react';
 import VideoModal from './VideoModal';
 import Button from './Button';
+import { formatHireDate } from '../../utils/dateUtils';
+import { capitalizeWords } from '../../utils/stringUtils';
 
 const StudentCard = ({ student }) => {
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
@@ -23,6 +25,11 @@ const StudentCard = ({ student }) => {
     linkedinUrl,
     hireDate
   } = student;
+
+  // Função para verificar se um campo tem conteúdo válido (pelo menos 2 caracteres)
+  const hasValidContent = (text) => {
+    return text && text.trim().length >= 2;
+  };
 
   // Verifica se o mês de contratação é o atual ou o anterior
   const isRecentlyHired = () => {
@@ -194,9 +201,11 @@ const StudentCard = ({ student }) => {
               </div>
               <div className="flex flex-col">
                 {renderName()}
-                <p className="text-text-muted-light dark:text-text-muted-dark mb-2">
-                  Antes: {previousProfession}
-                </p>
+                {hasValidContent(previousProfession) && (
+                  <p className="text-text-muted-light dark:text-text-muted-dark mb-2">
+                    Antes: {capitalizeWords(previousProfession)}
+                  </p>
+                )}
                 <div className="mt-auto">
                   {renderVideoButton()}
                 </div>
@@ -205,9 +214,11 @@ const StudentCard = ({ student }) => {
           ) : (
             <div className="mb-4">
               {renderName()}
-              <p className="text-text-muted-light dark:text-text-muted-dark">
-                Antes: {previousProfession}
-              </p>
+              {hasValidContent(previousProfession) && (
+                <p className="text-text-muted-light dark:text-text-muted-dark">
+                  Antes: {capitalizeWords(previousProfession)}
+                </p>
+              )}
               <div className="mt-2">
                 {renderVideoButton()}
               </div>
@@ -215,30 +226,32 @@ const StudentCard = ({ student }) => {
           )}
 
           <div className="divide-y divide-gray-200 dark:divide-gray-700 mt-4">
-            {/* História - sempre visível */}
-            <div className="py-3">
-              <h4 className="text-lg font-semibold text-text-light dark:text-text-dark mb-2">
-                História
-              </h4>
-              <div className="whitespace-pre-line text-text-light dark:text-text-dark">
-                {journeyDetails && journeyDetails.length > 230 && !showFullJourneyDetails ? (
-                  <>
-                    <p>{truncateText(journeyDetails)}</p>
-                    <button 
-                      onClick={() => setShowFullJourneyDetails(true)}
-                      className="mt-2 text-primary hover:text-primary-dark text-sm font-medium cursor-pointer"
-                    >
-                      Ver tudo
-                    </button>
-                  </>
-                ) : (
-                  <p>{journeyDetails}</p>
-                )}
+            {/* História - apenas se tiver conteúdo válido */}
+            {hasValidContent(journeyDetails) && (
+              <div className="py-3">
+                <h4 className="text-lg font-semibold text-text-light dark:text-text-dark mb-2">
+                  História
+                </h4>
+                <div className="whitespace-pre-line text-text-light dark:text-text-dark">
+                  {journeyDetails && journeyDetails.length > 230 && !showFullJourneyDetails ? (
+                    <>
+                      <p>{truncateText(journeyDetails)}</p>
+                      <button 
+                        onClick={() => setShowFullJourneyDetails(true)}
+                        className="mt-2 text-primary hover:text-primary-dark text-sm font-medium cursor-pointer"
+                      >
+                        Ver tudo
+                      </button>
+                    </>
+                  ) : (
+                    <p>{journeyDetails}</p>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Como conseguiu o primeiro emprego - se existir */}
-            {firstJobDetails && (
+            {/* Como conseguiu o primeiro emprego - apenas se tiver conteúdo válido */}
+            {hasValidContent(firstJobDetails) && (
               <div className="py-3">
                 <h4 className="text-lg font-semibold text-text-light dark:text-text-dark mb-2">
                   Como conseguiu o primeiro emprego
@@ -261,8 +274,8 @@ const StudentCard = ({ student }) => {
               </div>
             )}
 
-            {/* Como o DevClub ajudou - se existir */}
-            {howDevClubHelped && (
+            {/* Como o DevClub ajudou - apenas se tiver conteúdo válido */}
+            {hasValidContent(howDevClubHelped) && (
               <div className="py-3">
                 <h4 className="text-lg font-semibold text-text-light dark:text-text-dark mb-2">
                   Como o DevClub ajudou
@@ -285,6 +298,15 @@ const StudentCard = ({ student }) => {
               </div>
             )}
           </div>
+          
+          {/* Informação de primeiro emprego no final do card */}
+          {hireDate && (
+            <div className="mt-4 py-3 border-t border-gray-200 dark:border-gray-700">
+              <p className="text-text-muted-light dark:text-text-muted-dark text-center font-medium">
+                Primeiro Emprego como Programador em {formatHireDate(hireDate)}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

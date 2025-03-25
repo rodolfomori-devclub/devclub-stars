@@ -21,6 +21,11 @@ const HonorCard = ({ highlight }) => {
     highlightDate
   } = highlight;
 
+  // Função para verificar se um campo tem conteúdo válido (pelo menos 2 caracteres)
+  const hasValidContent = (text) => {
+    return text && text.trim().length >= 2;
+  };
+
   // Determina o tipo de card com base nas propriedades disponíveis
   const hasPhoto = !!photoUrl;
   const hasVideo = !!videoUrl;
@@ -119,16 +124,20 @@ const HonorCard = ({ highlight }) => {
                   </a>
                 )}
               </div>
-              <p className="opacity-90 text-sm">
-                {formatHireDate(highlightDate)}
-              </p>
+              {highlightDate && (
+                <p className="opacity-90 text-sm">
+                  {formatHireDate(highlightDate)}
+                </p>
+              )}
             </div>
           </div>
 
-          {/* Detalhes */}
-          <div className="mb-4 flex-grow">
-            <p className="whitespace-pre-line">{details}</p>
-          </div>
+          {/* Detalhes - apenas mostrar se tiver conteúdo válido */}
+          {hasValidContent(details) && (
+            <div className="mb-4 flex-grow">
+              <p className="whitespace-pre-line">{details}</p>
+            </div>
+          )}
 
           {/* Botões de ações */}
           <div className="mt-auto flex flex-wrap gap-2">

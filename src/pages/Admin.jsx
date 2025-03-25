@@ -18,7 +18,18 @@ import StudentModal from '../components/admin/StudentModal';
 import HonorForm from '../components/admin/HonorForm';
 import HonorModal from '../components/admin/HonorModal';
 import { formatHireDate } from '../utils/dateUtils';
+import { capitalizeWords } from '../utils/stringUtils';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+
+// Função para embaralhar arrays (Fisher-Yates shuffle)
+const shuffleArray = (array) => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
 
 const Admin = () => {
   // Estado para alunos empregados
@@ -49,13 +60,15 @@ const Admin = () => {
     try {
       setLoading(true);
       
-      // Carrega alunos empregados
+      // Carrega alunos empregados e ordena aleatoriamente
       const studentsData = await getAllStudents();
-      setStudents(studentsData);
+      const shuffledStudents = shuffleArray(studentsData);
+      setStudents(shuffledStudents);
       
-      // Carrega alunos de honra ao mérito
+      // Carrega alunos de honra ao mérito e ordena aleatoriamente
       const highlightsData = await getAllHighlights();
-      setHighlights(highlightsData);
+      const shuffledHighlights = shuffleArray(highlightsData);
+      setHighlights(shuffledHighlights);
       
       setLoading(false);
     } catch (error) {
@@ -254,7 +267,7 @@ const Admin = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-text-muted-light dark:text-text-muted-dark">
-                              {student.previousProfession}
+                              {student.previousProfession ? capitalizeWords(student.previousProfession) : "-"}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">

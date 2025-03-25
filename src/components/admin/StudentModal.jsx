@@ -2,18 +2,11 @@
 // Modal para visualização detalhada de um aluno
 
 import Button from '../ui/Button';
+import { capitalizeWords } from '../../utils/stringUtils';
+import { formatHireDate } from '../../utils/dateUtils';
 
 const StudentModal = ({ student, isOpen, onClose, onEdit, onDelete }) => {
   if (!isOpen || !student) return null;
-  
-  // Formata a data
-  const formatDate = (date) => {
-    if (!date) return 'Não informado';
-    return new Date(date).toLocaleDateString('pt-BR', {
-      month: 'long',
-      year: 'numeric'
-    });
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-auto">
@@ -57,10 +50,10 @@ const StudentModal = ({ student, isOpen, onClose, onEdit, onDelete }) => {
                     <span className="font-medium">Nome:</span> {student.name}
                   </p>
                   <p className="text-text-light dark:text-text-dark">
-                    <span className="font-medium">Antiga Profissão:</span> {student.previousProfession}
+                    <span className="font-medium">Antiga Profissão:</span> {student.previousProfession ? capitalizeWords(student.previousProfession) : '-'}
                   </p>
                   <p className="text-text-light dark:text-text-dark">
-                    <span className="font-medium">Mês de Contratação:</span> {formatDate(student.hireDate)}
+                    <span className="font-medium">Mês de Contratação:</span> {formatHireDate(student.hireDate)}
                   </p>
                   <p className="text-text-light dark:text-text-dark">
                     <span className="font-medium">Destaque:</span> {student.featured ? 'Sim' : 'Não'}
