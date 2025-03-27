@@ -1,78 +1,115 @@
 // src/components/ui/VideoModal.jsx
-// Modal para exibição de vídeos dos alunos
-
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
 const VideoModal = ({ isOpen, videoUrl, onClose }) => {
-  const modalRef = useRef(null);
-  const overlayRef = useRef(null);
-
   useEffect(() => {
-    const handleEscape = (e) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-
-    const handleOutsideClick = (e) => {
-      if (overlayRef.current && e.target === overlayRef.current) {
-        onClose();
-      }
-    };
-
     if (isOpen) {
+      // Lock body scroll while modal is open
       document.body.style.overflow = 'hidden';
+      
+      // Add event listener for escape key
+      const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+          onClose();
+        }
+      };
+      
       document.addEventListener('keydown', handleEscape);
-      document.addEventListener('mousedown', handleOutsideClick);
+      
+      // Cleanup
+      return () => {
+        document.body.style.overflow = '';
+        document.removeEventListener('keydown', handleEscape);
+      };
     }
-
-    return () => {
-      document.body.style.overflow = '';
-      document.removeEventListener('keydown', handleEscape);
-      document.removeEventListener('mousedown', handleOutsideClick);
-    };
   }, [isOpen, onClose]);
-
+  
   if (!isOpen) return null;
-
+  
   return (
     <div 
-      ref={overlayRef}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in overflow-hidden"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        backdropFilter: 'blur(4px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000
+      }}
     >
       <div 
-        ref={modalRef}
-        className="relative w-full max-w-4xl mx-auto bg-background-light dark:bg-background-dark rounded-lg shadow-2xl overflow-hidden animate-slide-up"
+        style={{
+          width: '80%',
+          maxWidth: '800px',
+          position: 'relative'
+        }}
       >
-        <div className="aspect-video w-full bg-black">
+        <div 
+          style={{
+            position: 'relative',
+            paddingBottom: '56.25%', /* 16:9 aspect ratio */
+            height: 0,
+            overflow: 'hidden',
+            background: 'black',
+            borderRadius: '8px',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+          }}
+        >
           <iframe
             src={videoUrl}
             title="Student video"
-            className="w-full h-full"
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              border: 'none'
+            }}
             frameBorder="0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
-          ></iframe>
+          />
         </div>
-        
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 rounded-full bg-secondary/80 text-white hover:bg-secondary transition-colors"
+          style={{
+            position: 'absolute',
+            top: '-20px',
+            right: '-20px',
+            backgroundColor: 'rgba(51, 65, 85, 0.8)',
+            color: 'white',
+            width: '40px',
+            height: '40px',
+            borderRadius: '50%',
+            border: 'none',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.3)'
+          }}
           aria-label="Fechar"
         >
-          <svg
+          <svg 
             xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            className="w-6 h-6"
+            width="24" 
+            height="24" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="2" 
+            strokeLinecap="round" 
+            strokeLinejoin="round"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
         </button>
       </div>

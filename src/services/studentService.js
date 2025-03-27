@@ -85,14 +85,19 @@ export const getStudentsWithPhotos = async (limit = 4) => {
 };
 
 // Busca alunos contratados no mês atual ou anterior
+// Busca alunos contratados no mês atual e nos dois meses anteriores
 export const getRecentlyHiredStudents = async () => {
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
   
-  // Mês anterior
+  // Mês anterior (1 mês atrás)
   const previousMonth = currentMonth === 0 ? 11 : currentMonth - 1;
   const previousYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+  
+  // Dois meses atrás
+  const twoMonthsAgo = currentMonth <= 1 ? currentMonth + 10 : currentMonth - 2;
+  const twoMonthsAgoYear = currentMonth <= 1 ? currentYear - 1 : currentYear;
   
   try {
     const allStudents = await getAllStudents();
@@ -103,10 +108,11 @@ export const getRecentlyHiredStudents = async () => {
       const hireMonth = student.hireDate.getMonth();
       const hireYear = student.hireDate.getFullYear();
       
-      // Verifica se foi contratado no mês atual ou anterior
+      // Verifica se foi contratado no mês atual ou nos dois meses anteriores
       return (
         (hireMonth === currentMonth && hireYear === currentYear) ||
-        (hireMonth === previousMonth && hireYear === previousYear)
+        (hireMonth === previousMonth && hireYear === previousYear) ||
+        (hireMonth === twoMonthsAgo && hireYear === twoMonthsAgoYear)
       );
     });
     

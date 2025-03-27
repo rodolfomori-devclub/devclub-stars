@@ -60,15 +60,13 @@ const Admin = () => {
     try {
       setLoading(true);
       
-      // Carrega alunos empregados e ordena aleatoriamente
+      // Carrega alunos empregados - mantém a ordem alfabética (não embaralha)
       const studentsData = await getAllStudents();
-      const shuffledStudents = shuffleArray(studentsData);
-      setStudents(shuffledStudents);
+      setStudents(studentsData); // Dados já vêm ordenados por nome do Firebase
       
-      // Carrega alunos de honra ao mérito e ordena aleatoriamente
+      // Carrega alunos de honra ao mérito - mantém a ordem alfabética (não embaralha)
       const highlightsData = await getAllHighlights();
-      const shuffledHighlights = shuffleArray(highlightsData);
-      setHighlights(shuffledHighlights);
+      setHighlights(highlightsData); // Dados já vêm ordenados por data e nome do Firebase
       
       setLoading(false);
     } catch (error) {

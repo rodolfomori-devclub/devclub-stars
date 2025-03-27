@@ -127,41 +127,50 @@ const Home = () => {
   }, [filter, searchTerm, professionFilter, students]);
 
   // Observar elementos para animações de entrada
-  useEffect(() => {
-    const observerOptions = {
-      threshold: 0.1
-    };
+// In src/pages/Home.jsx, update the following useEffect:
 
-    const observerCallback = (entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          if (entry.target === heroRef.current) {
-            setIsVisible(prev => ({ ...prev, hero: true }));
-          } else if (entry.target === aboutRef.current) {
-            setIsVisible(prev => ({ ...prev, about: true }));
-          } else if (entry.target === featuredRef.current) {
-            setIsVisible(prev => ({ ...prev, featured: true }));
-          } else if (entry.target === allRef.current) {
-            setIsVisible(prev => ({ ...prev, all: true }));
-          }
+// Replace the existing Intersection Observer useEffect with this version:
+useEffect(() => {
+  const observerOptions = {
+    threshold: 0.01,  // Lowered threshold - only 1% needs to be visible
+    rootMargin: '100px 0px'  // Start observing 100px before element enters viewport
+  };
+
+  const observerCallback = (entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        if (entry.target === heroRef.current) {
+          setIsVisible(prev => ({ ...prev, hero: true }));
+        } else if (entry.target === aboutRef.current) {
+          setIsVisible(prev => ({ ...prev, about: true }));
+        } else if (entry.target === featuredRef.current) {
+          setIsVisible(prev => ({ ...prev, featured: true }));
+        } else if (entry.target === allRef.current) {
+          setIsVisible(prev => ({ ...prev, all: true }));
         }
-      });
-    };
+      }
+    });
+  };
 
-    const observer = new IntersectionObserver(observerCallback, observerOptions);
-    
-    if (heroRef.current) observer.observe(heroRef.current);
-    if (aboutRef.current) observer.observe(aboutRef.current);
-    if (featuredRef.current) observer.observe(featuredRef.current);
-    if (allRef.current) observer.observe(allRef.current);
-    
-    return () => {
-      if (heroRef.current) observer.unobserve(heroRef.current);
-      if (aboutRef.current) observer.unobserve(aboutRef.current);
-      if (featuredRef.current) observer.unobserve(featuredRef.current);
-      if (allRef.current) observer.unobserve(allRef.current);
-    };
-  }, []);
+  const observer = new IntersectionObserver(observerCallback, observerOptions);
+  
+  if (heroRef.current) observer.observe(heroRef.current);
+  if (aboutRef.current) observer.observe(aboutRef.current);
+  if (featuredRef.current) observer.observe(featuredRef.current);
+  if (allRef.current) observer.observe(allRef.current);
+  
+  return () => {
+    observer.disconnect();
+  };
+}, []);
+
+// Add this new useEffect to ensure visibility when data loads
+useEffect(() => {
+  if (!loading && students.length > 0) {
+    // Force the "all" section to be visible when data is loaded
+    setIsVisible(prev => ({ ...prev, all: true }));
+  }
+}, [loading, students]);
 
   return (
     <div className="pt-16">
@@ -321,7 +330,7 @@ const Home = () => {
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-text-light dark:text-text-dark mb-4">
-              Alunos <span className="text-primary">Destaque</span>
+              Empregados do <span className="text-primary">Mês</span>
             </h2>
             <p className="text-xl text-text-muted-light dark:text-text-muted-dark max-w-3xl mx-auto">
               Conheça algumas das histórias mais inspiradoras dos nossos alunos que conseguiram emprego recentemente.
